@@ -1,6 +1,13 @@
 const FIXED_TEAMS = ["JSK", "MCA", "USMA", "CRB", "USMH", "MCO", "NAHD", "ESS"];
 
-// التحقق من تسجيل الدخول عند فتح الصفحة
+// المباريات الأربعة الافتراضية
+const DEFAULT_GAMES = [
+    { vs: "JSK vs MCA", time: "Time: 18:00 GMT", stad: "Stad: 5 Juillet" },
+    { vs: "USMA vs CRB", time: "Time: 19:30 GMT", stad: "Stad: Nelson Mandela" },
+    { vs: "ESS vs MCO", time: "Time: 21:00 GMT", stad: "Stad: 8 Mai 1945" },
+    { vs: "NAHD vs USMH", time: "Time: 22:00 GMT", stad: "Stad: 20 Aout" }
+];
+
 window.addEventListener("DOMContentLoaded", () => {
     const savedUser = localStorage.getItem("naflCurrentSession");
     if (savedUser) {
@@ -9,9 +16,10 @@ window.addEventListener("DOMContentLoaded", () => {
         loadUserData(savedUser);
     }
     loadLeagueTable();
+    loadGamesCards();
 });
 
-// أول تسجيل دخول
+// تسجيل الدخول لأول مرة وحفظ الحساب
 function firstLogin() {
     const username = document.getElementById("robloxUser").value.trim();
     if (!username) {
@@ -23,7 +31,7 @@ function firstLogin() {
     let existing = users.find(u => u.username.toLowerCase() === username.toLowerCase());
 
     if (!existing) {
-        // أول لاعب مسجل يعتبر Owner افتراضياً للتجربة، والباقي Player
+        // أول لاعب مسجل سيكون Owner تلقائياً والبقية Player
         const role = users.length === 0 ? "Owner" : "Player";
         existing = { username: username, role: role, team: "بدون فريق" };
         users.push(existing);
@@ -36,7 +44,7 @@ function firstLogin() {
     loadUserData(username);
 }
 
-// تبديل الأزرار (Table, Store, My Career)
+// تبديل الصفحات بالأزرار
 function switchTab(tabId, btn) {
     document.querySelectorAll(".section-content").forEach(sec => sec.classList.remove("active"));
     document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
@@ -45,7 +53,46 @@ function switchTab(tabId, btn) {
     btn.classList.add("active");
 }
 
-// تحميل بيانات البروفايل
+// عرض المباريات الاربعة
+function loadGamesCards() {
+    let games = JSON.parse(localStorage.getItem("naflGamesData")) || DEFAULT_GAMES;
+    const container = document.getElementById("gamesContainer");
+    container.innerHTML = "";
+
+    games.forEach((g, idx) => {
+        const card = document.createElement("div");
+        card.className = "game-card";
+        card.innerHTML = `
+            <div style="font-size:12px; color:#888; margin-bottom:5px;">مباراة #${idx + 1}</div>
+            <div class="match-teams">${g.vs}</div>
+            <div class="match-info">🕒 ${g.time}</div>
+            <div class="match-info">🏟️ ${g.stad}</div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+// تحديث بيانات المباريات من طرف Staff / Co-owner / Owner
+function updateGameData() {
+    const cardIndex = document.getElementById("gameCardSelect").value;
+    const vsVal = document.getElementById("editVs").value.trim();
+    const timeVal = document.getElementById("editTime").value.trim();
+    const stadVal = document.getElementById("editStad").value.trim();
+
+    if (!vsVal || !timeVal || !stadVal) {
+        alert("يرجى ملء جميع الحقول لتحديث المباراة!");
+        return;
+    }
+
+    let games = JSON.parse(localStorage.getItem("naflGamesData")) || DEFAULT_GAMES;
+    games[cardIndex] = { vs: vsVal, time: timeVal, stad: stadVal };
+    
+    localStorage.setItem("naflGamesData", JSON.stringify(games));
+    alert("تم تحديث معلومات المباراة بنجاح! ⚽");
+    loadGamesCards();
+}
+
+// تحميل البروفايل وصلاحيات الإدارة
 function loadUserData(username) {
     let users = JSON.parse(localStorage.getItem("naflAllUsers") || "[]");
     let user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
@@ -55,7 +102,7 @@ function loadUserData(username) {
     document.getElementById("profileRole").innerText = user.role;
     document.getElementById("profileTeam").innerText = user.team;
 
-    // إظهار لوحة تحكم الإدارة إذا كان Owner أو Co-owner أو Staff
+    // تفعيل لوحة التعديل فقط للـ Owner, Co-owner, Staff
     if (["Owner", "Co-owner", "Staff"].includes(user.role)) {
         document.getElementById("adminPanel").style.display = "block";
     } else {
@@ -65,12 +112,12 @@ function loadUserData(username) {
     loadMyInvites(user.username);
 }
 
-// جدول الدوري بناءً على الفرق الثابتة وجداول جوجل أو قيم افتراضية
+// عرض ترتيب الدوري
 function loadLeagueTable() {
     const tbody = document.getElementById("leagueTableBody");
     tbody.innerHTML = "";
 
-    FIXED_TEAMS.forEach((team, index) => {
+    FIXED_TEAMS.forEach((team) => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td><b>${team}</b></td>
@@ -84,7 +131,7 @@ function loadLeagueTable() {
     });
 }
 
-// متجر البحث عن اللاعبين (Store)
+// متجر البحث عن اللاعبين
 function searchPlayers() {
     const query = document.getElementById("searchPlayerInput").value.toLowerCase().trim();
     const resultsDiv = document.getElementById("searchResults");
@@ -103,7 +150,6 @@ function searchPlayers() {
         div.style.cssText = "background:#262626; padding:10px; margin:8px 0; border-radius:6px; display:flex; justify-content:space-between; align-items:center;";
         
         let actionHTML = `<span class="badge">${u.role}</span>`;
-        // إذا كان المستخدم الحالي Team Owner أو أعلى، يمكنه إرسال عرض
         if (currentUser && ["Owner", "Co-owner", "Team Owner"].includes(currentUser.role) && u.username !== currentUser.username) {
             actionHTML += `<button onclick="sendOffer('${u.username}')" style="padding:5px 10px; background:#00ff87; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">إرسال عرض 📩</button>`;
         }
@@ -113,7 +159,7 @@ function searchPlayers() {
     });
 }
 
-// إرسال عرض للانضمام
+// إرسال العروض
 function sendOffer(targetUser) {
     let users = JSON.parse(localStorage.getItem("naflAllUsers") || "[]");
     let currentUserSession = localStorage.getItem("naflCurrentSession");
@@ -125,7 +171,7 @@ function sendOffer(targetUser) {
     alert("تم إرسال العرض بنجاح إلى " + targetUser);
 }
 
-// تحميل العروض الواردة للاعب في بروفايله
+// العروض الواردة
 function loadMyInvites(username) {
     let offers = JSON.parse(localStorage.getItem("naflOffers") || "[]");
     let myOffers = offers.filter(o => o.to === username && o.status === "pending");
@@ -149,7 +195,6 @@ function loadMyInvites(username) {
     });
 }
 
-// قبول أو رفض العرض
 function respondOffer(index, status, teamName) {
     let offers = JSON.parse(localStorage.getItem("naflOffers") || "[]");
     offers[index].status = status;
@@ -170,7 +215,7 @@ function respondOffer(index, status, teamName) {
     }
 }
 
-// صلاحيات الرولات (Staff/Owner لتعديل رولات الآخرين)
+// تعديل رولات المستخدمين
 function updateUserRole() {
     const target = document.getElementById("targetUser").value.trim();
     const newRole = document.getElementById("newRoleSelect").value;
