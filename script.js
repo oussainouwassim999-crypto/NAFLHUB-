@@ -1,3 +1,43 @@
+// الترقية التلقائية لحساب wassim1mouh إلى Owner
+function checkAdminAccount(username) {
+    if (username.toLowerCase() === "wassim1mouh") {
+        let users = JSON.parse(localStorage.getItem("naflAllUsers") || "[]");
+        let user = users.find(u => u.username.toLowerCase() === "wassim1mouh");
+        
+        if (user) {
+            user.role = "Owner";
+        } else {
+            users.push({ username: "wassim1mouh", role: "Owner", team: "الإدارة العليا" });
+        }
+        localStorage.setItem("naflAllUsers", JSON.stringify(users));
+    }
+}
+
+// تعديل دالة تسجيل الدخول لتفعيل رول Owner لـ wassim1mouh فوراً
+function firstLogin() {
+    const username = document.getElementById("robloxUser").value.trim();
+    if (!username) {
+        alert("يرجى كتابة اسم حسابك في روبلوكس!");
+        return;
+    }
+
+    checkAdminAccount(username);
+
+    let users = JSON.parse(localStorage.getItem("naflAllUsers") || "[]");
+    let existing = users.find(u => u.username.toLowerCase() === username.toLowerCase());
+
+    if (!existing) {
+        const role = (username.toLowerCase() === "wassim1mouh") ? "Owner" : "Player";
+        existing = { username: username, role: role, team: "بدون فريق" };
+        users.push(existing);
+        localStorage.setItem("naflAllUsers", JSON.stringify(users));
+    }
+
+    localStorage.setItem("naflCurrentSession", username);
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("mainApp").style.display = "block";
+    loadUserData(username);
+}
 const FIXED_TEAMS = ["JSK", "MCA", "USMA", "CRB", "USMH", "MCO", "NAHD", "ESS"];
 
 const DEFAULT_GAMES = [
