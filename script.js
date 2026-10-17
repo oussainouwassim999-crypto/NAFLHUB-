@@ -1,6 +1,5 @@
 const FIXED_TEAMS = ["JSK", "MCA", "USMA", "CRB", "USMH", "MCO", "NAHD", "ESS"];
 
-// المباريات الأربعة الافتراضية
 const DEFAULT_GAMES = [
     { vs: "JSK vs MCA", time: "Time: 18:00 GMT", stad: "Stad: 5 Juillet" },
     { vs: "USMA vs CRB", time: "Time: 19:30 GMT", stad: "Stad: Nelson Mandela" },
@@ -17,9 +16,10 @@ window.addEventListener("DOMContentLoaded", () => {
     }
     loadLeagueTable();
     loadGamesCards();
+    setupTeamSelect();
 });
 
-// تسجيل الدخول لأول مرة وحفظ الحساب
+// تسجيل الدخول مع جلب صورة بروفايل روبلوكس
 function firstLogin() {
     const username = document.getElementById("robloxUser").value.trim();
     if (!username) {
@@ -31,7 +31,6 @@ function firstLogin() {
     let existing = users.find(u => u.username.toLowerCase() === username.toLowerCase());
 
     if (!existing) {
-        // أول لاعب مسجل سيكون Owner تلقائياً والبقية Player
         const role = users.length === 0 ? "Owner" : "Player";
         existing = { username: username, role: role, team: "بدون فريق" };
         users.push(existing);
@@ -44,55 +43,17 @@ function firstLogin() {
     loadUserData(username);
 }
 
-// تبديل الصفحات بالأزرار
+// تبديل الأقسام عبر الأزرار
 function switchTab(tabId, btn) {
     document.querySelectorAll(".section-content").forEach(sec => sec.classList.remove("active"));
     document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
     
     document.getElementById(tabId).classList.add("active");
     btn.classList.add("active");
+    if(tabId === 'teaminfo') loadTeamDetails();
 }
 
-// عرض المباريات الاربعة
-function loadGamesCards() {
-    let games = JSON.parse(localStorage.getItem("naflGamesData")) || DEFAULT_GAMES;
-    const container = document.getElementById("gamesContainer");
-    container.innerHTML = "";
-
-    games.forEach((g, idx) => {
-        const card = document.createElement("div");
-        card.className = "game-card";
-        card.innerHTML = `
-            <div style="font-size:12px; color:#888; margin-bottom:5px;">مباراة #${idx + 1}</div>
-            <div class="match-teams">${g.vs}</div>
-            <div class="match-info">🕒 ${g.time}</div>
-            <div class="match-info">🏟️ ${g.stad}</div>
-        `;
-        container.appendChild(card);
-    });
-}
-
-// تحديث بيانات المباريات من طرف Staff / Co-owner / Owner
-function updateGameData() {
-    const cardIndex = document.getElementById("gameCardSelect").value;
-    const vsVal = document.getElementById("editVs").value.trim();
-    const timeVal = document.getElementById("editTime").value.trim();
-    const stadVal = document.getElementById("editStad").value.trim();
-
-    if (!vsVal || !timeVal || !stadVal) {
-        alert("يرجى ملء جميع الحقول لتحديث المباراة!");
-        return;
-    }
-
-    let games = JSON.parse(localStorage.getItem("naflGamesData")) || DEFAULT_GAMES;
-    games[cardIndex] = { vs: vsVal, time: timeVal, stad: stadVal };
-    
-    localStorage.setItem("naflGamesData", JSON.stringify(games));
-    alert("تم تحديث معلومات المباراة بنجاح! ⚽");
-    loadGamesCards();
-}
-
-// تحميل البروفايل وصلاحيات الإدارة
+// تحميل بيانات البروفايل وصورة روبلوكس
 function loadUserData(username) {
     let users = JSON.parse(localStorage.getItem("naflAllUsers") || "[]");
     let user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
@@ -102,7 +63,15 @@ function loadUserData(username) {
     document.getElementById("profileRole").innerText = user.role;
     document.getElementById("profileTeam").innerText = user.team;
 
-    // تفعيل لوحة التعديل فقط للـ Owner, Co-owner, Staff
+    // جلب صورة بروفايل روبلوكس الحقيقية عبر API عامة
+    const avatarImg = document.getElementById("profileAvatar");
+    avatarImg.src = `https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=1&size=150x150&format=Png&isCircular=true`;
+    // طريقة احتياطية بوضع صورة افتراضية أو رابط عام إذا لم تتوفر الأيدي
+    avatarImg.onerror = function() {
+        this.src = `https://tr.rbxcdn.com/33333333333333333333333333333333/150/150/AvatarHeadshot/Png`;
+    };
+
+    // إظهار لوحة التحكم للإدارة
     if (["Owner", "Co-owner", "Staff"].includes(user.role)) {
         document.getElementById("adminPanel").style.display = "block";
     } else {
@@ -112,7 +81,7 @@ function loadUserData(username) {
     loadMyInvites(user.username);
 }
 
-// عرض ترتيب الدوري
+// جدول الدوري
 function loadLeagueTable() {
     const tbody = document.getElementById("leagueTableBody");
     tbody.innerHTML = "";
@@ -131,7 +100,46 @@ function loadLeagueTable() {
     });
 }
 
-// متجر البحث عن اللاعبين
+// جدول المباريات
+function loadGamesCards() {
+    let games = JSON.parse(localStorage.getItem("naflGamesData")) || DEFAULT_GAMES;
+    const container = document.getElementById("gamesContainer");
+    container.innerHTML = "";
+
+    games.forEach((g, idx) => {
+        const card = document.createElement("div");
+        card.className = "game-card";
+        card.innerHTML = `
+            <div style="font-size:12px; color:#888; margin-bottom:5px;">مباراة #${idx + 1}</div>
+            <div class="match-teams">${g.vs}</div>
+            <div class="match-info">🕒 ${g.time}</div>
+            <div class="match-info">🏟️ ${g.stad}</div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+// تعديل المباريات للإدارة
+function updateGameData() {
+    const cardIndex = document.getElementById("gameCardSelect").value;
+    const vsVal = document.getElementById("editVs").value.trim();
+    const timeVal = document.getElementById("editTime").value.trim();
+    const stadVal = document.getElementById("editStad").value.trim();
+
+    if (!vsVal || !timeVal || !stadVal) {
+        alert("يرجى ملء جميع الحقول!");
+        return;
+    }
+
+    let games = JSON.parse(localStorage.getItem("naflGamesData")) || DEFAULT_GAMES;
+    games[cardIndex] = { vs: vsVal, time: timeVal, stad: stadVal };
+    
+    localStorage.setItem("naflGamesData", JSON.stringify(games));
+    alert("تم تحديث المباراة بنجاح! ⚽");
+    loadGamesCards();
+}
+
+// البحث عن كل المسجلين في المتجر Store
 function searchPlayers() {
     const query = document.getElementById("searchPlayerInput").value.toLowerCase().trim();
     const resultsDiv = document.getElementById("searchResults");
@@ -150,8 +158,22 @@ function searchPlayers() {
         div.style.cssText = "background:#262626; padding:10px; margin:8px 0; border-radius:6px; display:flex; justify-content:space-between; align-items:center;";
         
         let actionHTML = `<span class="badge">${u.role}</span>`;
-        if (currentUser && ["Owner", "Co-owner", "Team Owner"].includes(currentUser.role) && u.username !== currentUser.username) {
-            actionHTML += `<button onclick="sendOffer('${u.username}')" style="padding:5px 10px; background:#00ff87; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">إرسال عرض 📩</button>`;
+        
+        // التحقق من صلاحية Owner للفريق المناسب (مثال: Owner CRB يمكنه إرسال عرض لفريقه فقط)
+        let canInvite = false;
+        let myTeamName = "";
+        if (currentUser) {
+            if (["Owner", "Co-owner"].includes(currentUser.role)) {
+                canInvite = true;
+                myTeamName = "الإدارة العامة";
+            } else if (currentUser.role.startsWith("Owner ")) {
+                myTeamName = currentUser.role.replace("Owner ", "");
+                canInvite = true;
+            }
+        }
+
+        if (canInvite && u.username !== currentUser.username) {
+            actionHTML += `<button onclick="sendOffer('${u.username}', '${myTeamName}')" style="padding:5px 10px; background:#00ff87; border:none; border-radius:4px; font-weight:bold; cursor:pointer;">إرسال عرض (${myTeamName}) 📩</button>`;
         }
 
         div.innerHTML = `<div><b>${u.username}</b> <small style="color:#aaa;">(${u.team})</small></div> <div>${actionHTML}</div>`;
@@ -159,19 +181,15 @@ function searchPlayers() {
     });
 }
 
-// إرسال العروض
-function sendOffer(targetUser) {
-    let users = JSON.parse(localStorage.getItem("naflAllUsers") || "[]");
-    let currentUserSession = localStorage.getItem("naflCurrentSession");
-    let sender = users.find(u => u.username === currentUserSession);
-
+// إرسال العرض
+function sendOffer(targetUser, teamName) {
     let offers = JSON.parse(localStorage.getItem("naflOffers") || "[]");
-    offers.push({ to: targetUser, fromTeam: sender.team || "فريق رسمي", status: "pending" });
+    offers.push({ to: targetUser, fromTeam: teamName, status: "pending" });
     localStorage.setItem("naflOffers", JSON.stringify(offers));
-    alert("تم إرسال العرض بنجاح إلى " + targetUser);
+    alert(`تم إرسال العرض بنجاح إلى ${targetUser} للانضمام إلى فريق ${teamName}`);
 }
 
-// العروض الواردة
+// العروض الواردة وقبولها
 function loadMyInvites(username) {
     let offers = JSON.parse(localStorage.getItem("naflOffers") || "[]");
     let myOffers = offers.filter(o => o.to === username && o.status === "pending");
@@ -215,7 +233,40 @@ function respondOffer(index, status, teamName) {
     }
 }
 
-// تعديل رولات المستخدمين
+// إعداد خيارات قائمة Team Info
+function setupTeamSelect() {
+    const select = document.getElementById("selectTeamView");
+    select.innerHTML = "";
+    FIXED_TEAMS.forEach(team => {
+        const opt = document.createElement("option");
+        opt.value = team;
+        opt.innerText = team;
+        select.appendChild(opt);
+    });
+}
+
+// عرض معلومات كل فريق (اللاعبين والأهداف)
+function loadTeamDetails() {
+    const teamName = document.getElementById("selectTeamView").value;
+    let users = JSON.parse(localStorage.getItem("naflAllUsers") || "[]");
+    let teamPlayers = users.filter(u => u.team === teamName);
+
+    let stats = JSON.parse(localStorage.getItem("naflTeamStats") || "{}");
+    let tStats = stats[teamName] || { scored: 0, conceded: 0 };
+
+    const box = document.getElementById("teamDetailsBox");
+    let playersHTML = teamPlayers.length > 0 ? teamPlayers.map(p => `<li>${p.username} (${p.role})</li>`).join('') : '<p style="color:#888;">لا توجد لاعبين منضمين بعد.</p>';
+
+    box.innerHTML = `
+        <h3 style="color:#00ff87;">فريق: ${teamName}</h3>
+        <p><b>⚽ الأهداف المسجلة:</b> ${tStats.scored}</p>
+        <p><b>🛡️ الأهداف المستقبلة:</b> ${tStats.conceded}</p>
+        <h4 style="margin-top:10px;">قائمة اللاعبين في الفريق:</h4>
+        <ul style="text-align:right; padding-right:20px;">${playersHTML}</ul>
+    `;
+}
+
+// تحديث الرولات للاعبين
 function updateUserRole() {
     const target = document.getElementById("targetUser").value.trim();
     const newRole = document.getElementById("newRoleSelect").value;
@@ -224,7 +275,7 @@ function updateUserRole() {
     let targetUserObj = users.find(u => u.username.toLowerCase() === target.toLowerCase());
 
     if (!targetUserObj) {
-        alert("لم يتم العثور على هذا المستخدم مسجلاً في النظام!");
+        alert("لم يتم العثور على هذا المستخدم مسجلاً!");
         return;
     }
 
