@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NAFL - National arab Football League</title>
+    <!-- Tailwind CSS لتنسيق الواجهة -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #080a0e; color: #f3f4f6; font-family: system-ui, sans-serif; }
+        .glass-card { background: rgba(18, 24, 38, 0.75); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+        .active-tab { background-color: #2563eb; color: #ffffff; }
+    </style>
+</head>
+<body class="p-4 md:p-8 max-w-4xl mx-auto space-y-6">
+
+    <!-- شريط الملاحة العلوي -->
+    <header class="flex justify-between items-center glass-card p-4 rounded-2xl">
+        <div class="flex items-center space-x-3 space-x-reverse">
+            <span class="bg-blue-600 text-white font-black text-xs px-3 py-1 rounded-full tracking-wider">NAFL</span>
+            <h1 class="text-base font-bold">Good night, <span class="text-blue-400">wassim1mouh</span></h1>
+        </div>
+        <nav class="hidden md:flex space-x-6 space-x-reverse text-xs text-gray-400 font-medium">
+            <a href="#" class="text-white">Home</a>
+            <a href="#">League</a>
+            <a href="#">Store</a>
+            <a href="#">My career</a>
+            <a href="#">My club</a>
+        </nav>
+    </header>
+
+    <!-- بطاقات الإحصائيات -->
+    <div class="grid grid-cols-3 gap-3">
+        <div class="glass-card p-4 rounded-xl text-center">
+            <p class="text-gray-400 text-xs font-semibold">PLAYED</p>
+            <p class="text-2xl font-black mt-1">0</p>
+        </div>
+        <div class="glass-card p-4 rounded-xl text-center">
+            <p class="text-gray-400 text-xs font-semibold">TO PLAY</p>
+            <p class="text-2xl font-black mt-1">0</p>
+        </div>
+        <div class="glass-card p-4 rounded-xl text-center">
+            <p class="text-gray-400 text-xs font-semibold">GOALS</p>
+            <p class="text-2xl font-black mt-1 text-blue-500">0</p>
+        </div>
+    </div>
+
+    <!-- بطاقة المباراة القادمة -->
+    <div class="glass-card p-6 rounded-2xl text-center space-y-4 border-blue-500/20">
+        <div class="flex justify-between items-center text-xs text-gray-400">
+            <span class="bg-gray-800/80 px-3 py-1 rounded-full">NEXT MATCH</span>
+            <span class="bg-gray-800/80 px-3 py-1 rounded-full">Division Three - Matchweek 6</span>
+        </div>
+        <div class="flex justify-around items-center my-4">
+            <div class="text-right">
+                <p class="font-bold text-lg">JSK</p>
+            </div>
+            <div class="text-center">
+                <span class="text-3xl font-black tracking-widest text-white">17:30</span>
+                <p class="text-xs text-blue-400 font-semibold mt-1">TODAY</p>
+            </div>
+            <div class="text-left">
+                <p class="font-bold text-lg">CRB</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- جدول الترتيب -->
+    <div class="glass-card p-5 rounded-2xl space-y-4">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="font-bold text-lg">Standings</h2>
+                <p id="division-title" class="text-xs text-gray-400">Division One (8 clubs)</p>
+            </div>
+            <!-- أزرار الأقسام -->
+            <div class="flex space-x-1 space-x-reverse text-xs bg-gray-900/80 p-1 rounded-lg">
+                <button onclick="switchDivision('D1')" id="btn-D1" class="px-3 py-1 rounded-md font-bold active-tab">D1</button>
+                <button onclick="switchDivision('D2')" id="btn-D2" class="px-3 py-1 rounded-md font-bold text-gray-400">D2</button>
+                <button onclick="switchDivision('D3')" id="btn-D3" class="px-3 py-1 rounded-md font-bold text-gray-400">D3</button>
+            </div>
+        </div>
+
+        <!-- جدول الترتيب الديناميكي -->
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm text-right">
+                <thead>
+                    <tr class="text-gray-400 border-b border-gray-800 text-xs">
+                        <th class="p-3">#</th>
+                        <th class="p-3">CLUB</th>
+                        <th class="p-3 text-center">P</th>
+                        <th class="p-3 text-center">GD</th>
+                        <th class="p-3 text-center">PTS</th>
+                    </tr>
+                </thead>
+                <tbody id="standings-body" class="divide-y divide-gray-800/40">
+                    <!-- سيتم تحميل الفرق هنا تلقائياً -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- كود الجافاسكربت المدمج ليعمل فوراً بدون مشاكل -->
+    <script>
+        const standingsData = {
+            D1: [
+                { rank: 1, name: "JSK", p: 0, gd: "+0", pts: 0 },
+                { rank: 2, name: "CRB", p: 0, gd: "+0", pts: 0 },
+                { rank: 3, name: "MCA", p: 0, gd: "+0", pts: 0 },
+                { rank: 4, name: "USMA", p: 0, gd: "+0", pts: 0 },
+                { rank: 5, name: "USMH", p: 0, gd: "+0", pts: 0 }
+            ],
+            D2: [
+                { rank: 1, name: "ESS", p: 0, gd: "+0", pts: 0 },
+                { rank: 2, name: "MCO", p: 0, gd: "+0", pts: 0 },
+                { rank: 3, name: "NAHD", p: 0, gd: "+0", pts: 0 }
+            ],
+            D3: [
+                { rank: 1, name: "CRT", p: 0, gd: "+0", pts: 0 },
+                { rank: 2, name: "PAS", p: 0, gd: "+0", pts: 0 }
+            ]
+        };
+
+        function renderStandings(division) {
+            const tbody = document.getElementById("standings-body");
+            const title = document.getElementById("division-title");
+            if (!tbody) return;
+            
+            tbody.innerHTML = "";
+            if (title) title.innerText = `Division ${division === 'D1' ? 'One' : division === 'D2' ? 'Two' : 'Three'}`;
+
+            standingsData[division].forEach(team => {
+                const row = `
+                    <tr class="hover:bg-white/5 transition-colors">
+                        <td class="p-3 font-bold ${team.rank === 1 ? 'text-blue-400' : 'text-gray-400'}">${team.rank}</td>
+                        <td class="p-3 font-semibold">${team.name}</td>
+                        <td class="p-3 text-center text-gray-300">${team.p}</td>
+                        <td class="p-3 text-center text-gray-300">${team.gd}</td>
+                        <td class="p-3 text-center font-bold text-blue-400">${team.pts}</td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function switchDivision(div) {
+            ['D1', 'D2', 'D3'].forEach(d => {
+                const btn = document.getElementById(`btn-${d}`);
+                if (btn) {
+                    if (d === div) {
+                        btn.classList.add('active-tab');
+                        btn.classList.remove('text-gray-400');
+                    } else {
+                        btn.classList.remove('active-tab');
+                        btn.classList.add('text-gray-400');
+                    }
+                }
+            });
+            renderStandings(div);
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            renderStandings('D1');
+        });
+    </script>
+</body>
+</html>
